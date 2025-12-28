@@ -1,0 +1,24 @@
+# Data files
+*.zip
+*.json
+*.jsonl
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Model checkpoints
+saved_models/
+checkpoint-*/
+*.bin
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

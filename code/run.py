@@ -676,8 +676,9 @@ def main():
         "--eval_data_file", "/kaggle/working/GraphFVD/dataset/NVD/my_valid.jsonl",
         "--test_data_file", "/kaggle/working/GraphFVD/dataset/NVD/my_test.jsonl",
         "--block_size", "400",
-        "--train_batch_size", "32",
-        "--eval_batch_size", "32",
+        "--train_batch_size", "16",  # Reduced from 32 to fix OOM
+        "--eval_batch_size", "16",   # Reduced from 32 to fix OOM
+        "--gradient_accumulation_steps", "2",  # Added to maintain effective batch size 32
         "--max_grad_norm", "1.0",
         "--evaluate_during_training",
         "--gnn", "ReGCN",
