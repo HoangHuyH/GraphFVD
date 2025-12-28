@@ -342,16 +342,12 @@ def train(args, train_dataset, eval_dataset, model, tokenizer):
     model.zero_grad()
 
     my_metrics = []
-    # Wrap epoch loop with tqdm
-    epoch_bar = tqdm(range(args.start_epoch, int(args.num_train_epochs)), desc="Epochs", position=0)
-    for idx in epoch_bar:
+    # Training loop - print summary after each epoch
+    for idx in range(args.start_epoch, int(args.num_train_epochs)):
         tr_num = 0
         train_loss = 0
 
-        # Wrap batch loop with tqdm
-        batch_bar = tqdm(enumerate(train_dataloader), total=len(train_dataloader), 
-                         desc=f"Epoch {idx+1}", position=1, leave=False)
-        for step, batch in batch_bar:
+        for step, batch in enumerate(train_dataloader):
             adj = batch[0].to(args.device)
             adj_mask = batch[1].to(args.device)
             adj_feature = batch[2].to(args.device)
@@ -379,9 +375,6 @@ def train(args, train_dataset, eval_dataset, model, tokenizer):
             if avg_loss==0:
                 avg_loss=tr_loss
             avg_loss=round(train_loss/tr_num,5)
-            
-            # Update progress bar with current loss
-            batch_bar.set_postfix(loss=avg_loss)
                 
             if (step + 1) % args.gradient_accumulation_steps == 0:
                 optimizer.step()
@@ -419,7 +412,10 @@ def train(args, train_dataset, eval_dataset, model, tokenizer):
                         output_dir = os.path.join(output_dir, '{}'.format('model.bin')) 
                         torch.save(model_to_save.state_dict(), output_dir)
                         logger.info("Saving model checkpoint to %s", output_dir)
+        
+        # Print epoch summary
         avg_loss = round(train_loss / tr_num, 5)
+        print(f"Epoch {idx+1}/{int(args.num_train_epochs)} - 100% - Loss: {avg_loss}")
         logger.info("epoch {} loss {}".format(idx, avg_loss))
 
 
