@@ -683,7 +683,7 @@ def main():
         "--evaluate_during_training",
         "--gnn", "ReGCN",
         "--learning_rate", "5e-4",
-        "--epoch", "20",
+        "--epoch", "5",
         "--hidden_size", "128",
         "--num_GNN_layers", "2",
         "--seed", "123456",
