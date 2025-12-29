@@ -282,7 +282,7 @@ def train(args, train_dataset, eval_dataset, model, tokenizer):
     train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
     
     train_dataloader = DataLoader(train_dataset, sampler=train_sampler, 
-                                  batch_size=args.train_batch_size, num_workers=4, pin_memory=True)  # numworkers=4
+                                  batch_size=args.train_batch_size, num_workers=0, pin_memory=False)  # numworkers=0 to save RAM
     args.max_steps=args.epoch*len(train_dataloader)
     args.save_steps=len(train_dataloader)
     args.warmup_steps=len(train_dataloader)
@@ -447,7 +447,7 @@ def evaluate(args, eval_dataset, model, tokenizer, eval_when_training=False):
     args.eval_batch_size = args.per_gpu_eval_batch_size * max(1, args.n_gpu)
     # Note that DistributedSampler samples randomly
     eval_sampler = SequentialSampler(eval_dataset) if args.local_rank == -1 else DistributedSampler(eval_dataset)
-    eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args.eval_batch_size, num_workers=4, pin_memory=True)
+    eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args.eval_batch_size, num_workers=0, pin_memory=False)
 
     # multi-gpu evaluate
     if args.n_gpu > 1 and eval_when_training is False:
@@ -675,10 +675,10 @@ def main():
         "--train_data_file", "/kaggle/working/GraphFVD/dataset/NVD/my_train.jsonl",
         "--eval_data_file", "/kaggle/working/GraphFVD/dataset/NVD/my_valid.jsonl",
         "--test_data_file", "/kaggle/working/GraphFVD/dataset/NVD/my_test.jsonl",
-        "--block_size", "400",
-        "--train_batch_size", "16",  # Reduced from 32 to fix OOM
-        "--eval_batch_size", "16",   # Reduced from 32 to fix OOM
-        "--gradient_accumulation_steps", "2",  # Added to maintain effective batch size 32
+        "--block_size", "200",        # Reduced from 400 to fix OOM
+        "--train_batch_size", "8",    # Reduced from 16 to fix OOM
+        "--eval_batch_size", "8",     # Reduced from 16 to fix OOM
+        "--gradient_accumulation_steps", "4",  # Maintain effective batch size 32
         "--max_grad_norm", "1.0",
         "--evaluate_during_training",
         "--gnn", "ReGCN",
@@ -759,9 +759,22 @@ def main():
 
     logger.info("Training/evaluation parameters %s", args)
 
+    # Create datasets and free pretrained model memory
+    import gc
     train_dataset = TextDataset(pretrained_model, tokenizer, args, args.train_data_file, args.training_percent)
+    gc.collect()
+    torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    
     eval_dataset = TextDataset(pretrained_model, tokenizer, args, args.eval_data_file)
+    gc.collect()
+    torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    
     test_dataset = TextDataset(pretrained_model, tokenizer, args, args.test_data_file)
+    
+    # Free pretrained model memory after extracting embeddings
+    del pretrained_model
+    gc.collect()
+    torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
     # Training
     if args.do_train:
