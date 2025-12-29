@@ -278,7 +278,7 @@ class RelationalGraphConvLayer(Module):
         supports = []
         if A.dim() == 4:
             A = A.permute(1, 0, 2, 3)
-        for i in range(self.num_relations):
+        for i in range(self.num_rel):
             supports.append(torch.matmul(A[i].float(), X.float()))
 
         tmp = torch.cat(supports, dim=2)
